@@ -1,3 +1,5 @@
+console.log("JS wird geladen!");
+alert("JS funktioniert!");
 // Speicher-Helper
 function save(key, data) {
   localStorage.setItem(key, JSON.stringify(data));
