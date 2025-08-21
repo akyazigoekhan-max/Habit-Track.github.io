@@ -3,210 +3,338 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Habit Tracker</title>
+<title>Futuristischer Aufgabenmanager</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #f0f4f8; color: #333; margin:0; padding:0;}
-  header { background: #1e3a8a; color: white; padding: 1rem; text-align: center;}
-  nav { display: flex; justify-content: center; background: #3b82f6;}
-  nav button { background: transparent; border: none; color: white; padding: 1rem; cursor: pointer; font-size: 1rem;}
-  nav button.active { background: #2563eb;}
-  section { display: none; padding: 1rem;}
-  section.active { display: block;}
-  input, select, button { padding: 0.5rem; margin: 0.2rem 0; border-radius: 4px; border: 1px solid #ccc;}
-  button { cursor: pointer;}
-  .habit-item { display: flex; justify-content: space-between; padding:0.5rem; margin-bottom:0.3rem; background:#e0f2fe; border-radius:4px;}
-  .calendar { display:grid; grid-template-columns: repeat(7, 1fr); gap:2px; margin-bottom:1rem;}
-  .day { background:#dbeafe; padding:0.5rem; text-align:center; border-radius:4px;}
-  .day.completed { background:#4ade80; color:white;}
-  .timer-display { font-size:2rem; margin-bottom:0.5rem;}
-  .streak-bar { display:flex; gap:2px; margin-top:0.2rem;}
-  .streak-bar div { width:10px; height:20px; background:#93c5fd;}
-  .streak-bar div.off { background:#d1d5db;}
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #0f0f1a;
+        color: #e0e0f0;
+        margin: 0;
+        padding: 0;
+    }
+    header {
+        background: linear-gradient(90deg, #00ffff, #ff00ff);
+        padding: 1rem;
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: bold;
+        letter-spacing: 2px;
+        color: #fff;
+    }
+    main {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 1rem;
+        gap: 1rem;
+    }
+    section {
+        background: #1a1a2e;
+        border-radius: 12px;
+        padding: 1rem;
+        flex: 1 1 300px;
+        min-width: 300px;
+        max-width: 600px;
+    }
+    h2 {
+        border-bottom: 1px solid #444;
+        padding-bottom: 0.5rem;
+    }
+    input, textarea, select, button {
+        width: 100%;
+        margin: 0.5rem 0;
+        padding: 0.5rem;
+        border-radius: 8px;
+        border: none;
+        background: #222;
+        color: #fff;
+    }
+    button {
+        cursor: pointer;
+        background: linear-gradient(90deg, #00ffff, #ff00ff);
+        color: #000;
+        font-weight: bold;
+    }
+    ul {
+        list-style: none;
+        padding: 0;
+    }
+    li {
+        background: #111;
+        margin: 0.5rem 0;
+        padding: 0.5rem;
+        border-radius: 8px;
+    }
+    .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .tag {
+        background: #00ffff;
+        color: #000;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        margin-left: 0.3rem;
+    }
+    .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.5rem;
+    }
+    .calendar div {
+        background: #111;
+        padding: 0.5rem;
+        border-radius: 8px;
+        min-height: 60px;
+    }
+    .pomodoro {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .pomodoro-timer {
+        font-size: 2rem;
+        margin: 1rem 0;
+    }
+    .subtasks {
+        margin-left: 1rem;
+    }
 </style>
 </head>
 <body>
+<header>Futuristischer Aufgabenmanager</header>
+<main>
+    <!-- Aufgabenverwaltung -->
+    <section id="tasks-section">
+        <h2>Aufgaben</h2>
+        <input type="text" id="task-title" placeholder="Titel">
+        <textarea id="task-desc" placeholder="Beschreibung"></textarea>
+        <input type="date" id="task-date">
+        <input type="time" id="task-time">
+        <select id="task-priority">
+            <option value="Hoch">Hoch</option>
+            <option value="Mittel">Mittel</option>
+            <option value="Niedrig">Niedrig</option>
+        </select>
+        <input type="text" id="task-tags" placeholder="Tags, kommasepariert">
+        <select id="task-recurring">
+            <option value="none">Keine Wiederholung</option>
+            <option value="daily">Täglich</option>
+            <option value="weekly">Wöchentlich</option>
+            <option value="monthly">Monatlich</option>
+        </select>
+        <input type="text" id="task-subtasks" placeholder="Unteraufgaben, kommasepariert">
+        <button onclick="addTask()">Aufgabe hinzufügen</button>
+        <ul id="task-list"></ul>
+    </section>
 
-<header><h1>Habit Tracker</h1></header>
+    <!-- Kalenderansicht -->
+    <section id="calendar-section">
+        <h2>Kalender</h2>
+        <div class="calendar" id="calendar-grid"></div>
+    </section>
 
-<nav>
-  <button class="tab-btn active" data-tab="habits">Habits</button>
-  <button class="tab-btn" data-tab="calendar">Kalender</button>
-  <button class="tab-btn" data-tab="timer">Fokus Timer</button>
-  <button class="tab-btn" data-tab="routines">Routinen</button>
-  <button class="tab-btn" data-tab="stats">Statistik</button>
-</nav>
+    <!-- Pomodoro -->
+    <section id="pomodoro-section">
+        <h2>Pomodoro-Timer</h2>
+        <div class="pomodoro">
+            <div class="pomodoro-timer" id="pomodoro-timer">25:00</div>
+            <button onclick="startPomodoro()">Start</button>
+            <button onclick="resetPomodoro()">Reset</button>
+        </div>
+    </section>
 
-<section id="habits" class="active">
-  <h2>Deine Habits</h2>
-  <input type="text" id="newHabit" placeholder="Neues Habit">
-  <button id="addHabit">Hinzufügen</button>
-  <ul id="habitList"></ul>
-</section>
-
-<section id="calendar">
-  <h2>Kalender</h2>
-  <div class="calendar" id="monthCalendar"></div>
-</section>
-
-<section id="timer">
-  <h2>Fokus Timer</h2>
-  <div>
-    <label>Dauer (Minuten):</label>
-    <select id="timerDuration">
-      ${Array.from({length: 90}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
-    </select>
-    <button id="startTimer">Start</button>
-    <button id="pauseTimer">Pause</button>
-    <button id="resetTimer">Reset</button>
-  </div>
-  <div class="timer-display" id="timerDisplay">00:00</div>
-  <div>
-    <label>Nach Timer Pause (Minuten):</label>
-    <select id="breakDuration">
-      ${Array.from({length:16}, (_, i)=> `<option value="${i+5}">${i+5}</option>`).join('')}
-    </select>
-  </div>
-</section>
-
-<section id="routines">
-  <h2>Routinen</h2>
-  <input type="text" id="newRoutine" placeholder="Neue Routine">
-  <button id="addRoutine">Hinzufügen</button>
-  <ul id="routineList"></ul>
-</section>
-
-<section id="stats">
-  <h2>Statistik</h2>
-  <div id="streakStats"></div>
-</section>
+    <!-- Gewohnheiten / Habit Tracker -->
+    <section id="habit-section">
+        <h2>Gewohnheiten</h2>
+        <input type="text" id="habit-name" placeholder="Gewohnheit hinzufügen">
+        <button onclick="addHabit()">Hinzufügen</button>
+        <ul id="habit-list"></ul>
+    </section>
+</main>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+    // --- LocalStorage Laden ---
+    let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+    let habits = JSON.parse(localStorage.getItem('habits') || '[]');
 
-  // Tabs
-  const tabs = document.querySelectorAll(".tab-btn");
-  const sections = document.querySelectorAll("section");
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("active"));
-      tab.classList.add("active");
-      const tabId = tab.dataset.tab;
-      sections.forEach(sec => sec.classList.remove("active"));
-      document.getElementById(tabId).classList.add("active");
-    });
-  });
+    const taskList = document.getElementById('task-list');
+    const habitList = document.getElementById('habit-list');
 
-  // Habits
-  let habits = JSON.parse(localStorage.getItem("habits")||"[]");
-  const habitList = document.getElementById("habitList");
-  const newHabitInput = document.getElementById("newHabit");
-
-  function saveHabits(){ localStorage.setItem("habits", JSON.stringify(habits)); }
-  function renderHabits(){
-    habitList.innerHTML = "";
-    habits.forEach((h,i)=>{
-      const li = document.createElement("li");
-      li.className="habit-item";
-      li.innerHTML = `<span>${h.title}</span> <button data-id="${i}">${h.completed? "✅":"⭕"}</button>`;
-      habitList.appendChild(li);
-    });
-  }
-  renderHabits();
-
-  document.getElementById("addHabit").addEventListener("click", ()=>{
-    if(newHabitInput.value.trim()){
-      habits.push({title:newHabitInput.value, completed:false});
-      newHabitInput.value="";
-      saveHabits();
-      renderHabits();
+    function saveTasks() {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        renderTasks();
+        renderCalendar();
     }
-  });
 
-  habitList.addEventListener("click", e=>{
-    if(e.target.tagName==="BUTTON"){
-      const id = e.target.dataset.id;
-      habits[id].completed = !habits[id].completed;
-      saveHabits();
-      renderHabits();
+    function saveHabits() {
+        localStorage.setItem('habits', JSON.stringify(habits));
+        renderHabits();
     }
-  });
 
-  // Timer
-  let timerInterval=null;
-  let remaining=0;
-  const timerDisplay = document.getElementById("timerDisplay");
-  const timerDuration = document.getElementById("timerDuration");
-  const breakDuration = document.getElementById("breakDuration");
+    // --- Aufgaben ---
+    function addTask() {
+        const title = document.getElementById('task-title').value;
+        const desc = document.getElementById('task-desc').value;
+        const date = document.getElementById('task-date').value;
+        const time = document.getElementById('task-time').value;
+        const priority = document.getElementById('task-priority').value;
+        const tags = document.getElementById('task-tags').value.split(',').map(t=>t.trim()).filter(t=>t);
+        const recurring = document.getElementById('task-recurring').value;
+        const subtasks = document.getElementById('task-subtasks').value.split(',').map(t=>t.trim()).filter(t=>t);
 
-  function updateTimerDisplay(){ 
-    const m = String(Math.floor(remaining/60)).padStart(2,"0");
-    const s = String(remaining%60).padStart(2,"0");
-    timerDisplay.textContent = `${m}:${s}`;
-  }
+        if(!title) return alert('Titel eingeben');
 
-  document.getElementById("startTimer").addEventListener("click", ()=>{
-    if(!timerInterval){
-      remaining = parseInt(timerDuration.value)*60;
-      timerInterval = setInterval(()=>{
-        if(remaining>0){ remaining--; updateTimerDisplay(); } 
-        else { clearInterval(timerInterval); timerInterval=null; alert("Timer beendet!"); }
-      },1000);
+        tasks.push({title, desc, date, time, priority, tags, recurring, subtasks});
+        saveTasks();
+
+        // Felder zurücksetzen
+        ['task-title','task-desc','task-date','task-time','task-tags','task-subtasks','task-recurring'].forEach(id=>{
+            document.getElementById(id).value='';
+        });
     }
-  });
 
-  document.getElementById("pauseTimer").addEventListener("click", ()=>{
-    clearInterval(timerInterval);
-    timerInterval=null;
-  });
-
-  document.getElementById("resetTimer").addEventListener("click", ()=>{
-    clearInterval(timerInterval); timerInterval=null; remaining=parseInt(timerDuration.value)*60; updateTimerDisplay();
-  });
-
-  updateTimerDisplay();
-
-  // Routinen
-  let routines = JSON.parse(localStorage.getItem("routines")||"[]");
-  const routineList = document.getElementById("routineList");
-  const newRoutineInput = document.getElementById("newRoutine");
-
-  function saveRoutines(){ localStorage.setItem("routines", JSON.stringify(routines)); }
-  function renderRoutines(){
-    routineList.innerHTML="";
-    routines.forEach((r,i)=>{
-      const li = document.createElement("li");
-      li.textContent=r.title;
-      routineList.appendChild(li);
-    });
-  }
-  renderRoutines();
-
-  document.getElementById("addRoutine").addEventListener("click", ()=>{
-    if(newRoutineInput.value.trim()){
-      routines.push({title:newRoutineInput.value});
-      newRoutineInput.value="";
-      saveRoutines();
-      renderRoutines();
+    function deleteTask(index){
+        if(confirm('Aufgabe löschen?')){
+            tasks.splice(index,1);
+            saveTasks();
+        }
     }
-  });
 
-  // Kalender Monatsansicht
-  const monthCalendar = document.getElementById("monthCalendar");
-  function renderCalendar(){
-    monthCalendar.innerHTML="";
-    const now = new Date();
-    const days = new Date(now.getFullYear(), now.getMonth()+1,0).getDate();
-    for(let i=1;i<=days;i++){
-      const div = document.createElement("div");
-      div.className="day";
-      div.textContent=i;
-      monthCalendar.appendChild(div);
+    function renderTasks(){
+        taskList.innerHTML='';
+        tasks.forEach((t,i)=>{
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div class="task-header">
+                    <strong>${t.title}</strong>
+                    <span>${t.priority}</span>
+                </div>
+                <div>${t.desc}</div>
+                <div>${t.date} ${t.time}</div>
+                <div>${t.tags.map(tag=>`<span class="tag">${tag}</span>`).join('')}</div>
+                ${t.subtasks.length>0?`<ul class="subtasks">${t.subtasks.map(st=>`<li>${st}</li>`).join('')}</ul>`:''}
+                <div>Wiederholung: ${t.recurring==='none'?'Keine':t.recurring}</div>
+                <button onclick="deleteTask(${i})">Löschen</button>
+            `;
+            taskList.appendChild(li);
+        });
     }
-  }
-  renderCalendar();
 
-});
+    // --- Kalender (Monatsansicht) ---
+    function renderCalendar(){
+        const grid = document.getElementById('calendar-grid');
+        grid.innerHTML='';
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month+1, 0).getDate();
+
+        for(let i=0;i<firstDay;i++){
+            const empty = document.createElement('div');
+            grid.appendChild(empty);
+        }
+
+        for(let d=1; d<=daysInMonth; d++){
+            const dayDiv = document.createElement('div');
+            dayDiv.innerHTML=`<strong>${d}</strong>`;
+            const dayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+            tasks.forEach(t=>{
+                let add = false;
+                if(t.date===dayStr) add=true;
+                else if(t.recurring==='daily') add=true;
+                else if(t.recurring==='weekly'){
+                    const taskDay = new Date(t.date).getDay();
+                    const currDay = new Date(year, month, d).getDay();
+                    if(taskDay===currDay) add=true;
+                }
+                else if(t.recurring==='monthly'){
+                    const taskDate = new Date(t.date).getDate();
+                    if(taskDate===d) add=true;
+                }
+                if(add){
+                    const tDiv = document.createElement('div');
+                    tDiv.textContent = `${t.title} (${t.time})`;
+                    tDiv.style.background='#00ffff';
+                    tDiv.style.color='#000';
+                    tDiv.style.marginTop='2px';
+                    tDiv.style.borderRadius='4px';
+                    tDiv.style.padding='2px';
+                    dayDiv.appendChild(tDiv);
+                }
+            });
+
+            grid.appendChild(dayDiv);
+        }
+    }
+
+    // --- Pomodoro Timer ---
+    let pomodoroTime=25*60;
+    let pomodoroInterval=null;
+    const pomodoroDisplay=document.getElementById('pomodoro-timer');
+
+    function startPomodoro(){
+        if(pomodoroInterval) return;
+        pomodoroInterval=setInterval(()=>{
+            pomodoroTime--;
+            const m=Math.floor(pomodoroTime/60).toString().padStart(2,'0');
+            const s=(pomodoroTime%60).toString().padStart(2,'0');
+            pomodoroDisplay.textContent=`${m}:${s}`;
+            if(pomodoroTime<=0){
+                clearInterval(pomodoroInterval);
+                pomodoroInterval=null;
+                alert('Pomodoro beendet!');
+                pomodoroTime=25*60;
+                pomodoroDisplay.textContent='25:00';
+            }
+        },1000);
+    }
+
+    function resetPomodoro(){
+        clearInterval(pomodoroInterval);
+        pomodoroInterval=null;
+        pomodoroTime=25*60;
+        pomodoroDisplay.textContent='25:00';
+    }
+
+    // --- Habit Tracker ---
+    function addHabit(){
+        const name = document.getElementById('habit-name').value;
+        if(!name) return;
+        habits.push({name, completed: false});
+        saveHabits();
+        document.getElementById('habit-name').value='';
+    }
+
+    function toggleHabit(index){
+        habits[index].completed=!habits[index].completed;
+        saveHabits();
+    }
+
+    function deleteHabit(index){
+        habits.splice(index,1);
+        saveHabits();
+    }
+
+    function renderHabits(){
+        habitList.innerHTML='';
+        habits.forEach((h,i)=>{
+            const li=document.createElement('li');
+            li.innerHTML=`
+                <input type="checkbox" ${h.completed?'checked':''} onclick="toggleHabit(${i})">
+                ${h.name}
+                <button onclick="deleteHabit(${i})">Löschen</button>
+            `;
+            habitList.appendChild(li);
+        });
+    }
+
+    renderTasks();
+    renderHabits();
+    renderCalendar();
 </script>
-
 </body>
 </html>
