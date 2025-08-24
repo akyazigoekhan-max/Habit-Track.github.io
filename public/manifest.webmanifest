@@ -1,9 +1,0 @@
-{
-  "name": "OpenTasks",
-  "short_name": "OpenTasks",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#0b0f19",
-  "theme_color": "#38bdf8",
-  "icons": []
-}
