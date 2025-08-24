@@ -1,375 +1,191 @@
-/*
-OpenHabit - shadcn-inspired React component
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenHabit Web</title>
 
-This single-file React component reproduces the visual style of https://ui.shadcn.com/
-using Tailwind CSS utility classes (no shadcn build step required). It is meant
-to be dropped into a React project (Vite, CRA or Next.js) with Tailwind configured.
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {},
+        },
+      };
+    </script>
 
-How to use (quick):
-1) Create a new Vite React project (or Next.js) and install Tailwind.
-   - Vite: `npm create vite@latest my-app --template react`
-   - Next.js: `npx create-next-app@latest my-app`
-2) Install Tailwind and configure according to Tailwind docs.
-3) Copy this file into `src/components/OpenHabitApp.jsx`.
-4) In your root App.jsx / page, import and render: `import OpenHabitApp from './components/OpenHabitApp'`.
-5) Optional: install lucide-react for icons and shadcn components if you want to progressively replace the simplified controls.
+    <!-- React & ReactDOM über CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-Notes:
-- This file intentionally keeps all logic client-side and uses localStorage ('oh_state_shadcn') for persistence.
-- The goal is to give you a shadcn-like UI without a heavy build pipeline. Replace components with true shadcn UI components when migrating to a Next.js + shadcn setup.
+    <!-- Lucide Icons (wie in shadcn/ui) -->
+    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.min.js"></script>
+  </head>
+  <body class="bg-background text-foreground min-h-screen">
+    <div id="root"></div>
 
-*/
+    <script type="text/babel">
 
-import React, { useEffect, useMemo, useState } from 'react';
+      const { useState, useEffect } = React;
 
-// Utility helpers
-const uid = () => crypto?.randomUUID?.() ?? Date.now().toString(36) + Math.random().toString(36).slice(2);
-const todayISO = () => new Date().toISOString().slice(0,10);
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-
-// Small, shadcn-like 'primitive' components built with Tailwind
-const Icon = ({children, className=''}) => (
-  <span className={`inline-flex items-center justify-center ${className}`}>{children}</span>
-);
-
-const Button = ({children, variant='default', className='', ...props}) => {
-  const base = 'px-3 py-1.5 rounded-md inline-flex items-center gap-2 font-medium';
-  const variants = {
-    default: 'bg-slate-100 text-slate-900 hover:bg-slate-200',
-    primary: 'bg-sky-600 text-white hover:bg-sky-700',
-    ghost: 'bg-transparent text-slate-700 hover:bg-slate-50'
-  };
-  return <button className={`${base} ${variants[variant]||variants.default} ${className}`} {...props}>{children}</button>;
-};
-
-const Card = ({children, className=''}) => (
-  <div className={`bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 shadow-sm ${className}`}>{children}</div>
-);
-
-// App components
-function Sidebar({onNavigate, active}){
-  return (
-    <aside className="w-72 p-4 border-r border-slate-100 dark:border-slate-700">
-      <div className="mb-6">
-        <div className="inline-flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-500 shadow-md" />
-          <div>
-            <div className="font-semibold">OpenHabit</div>
-            <div className="text-xs text-slate-500">frei & lokal</div>
+      // Beispiel eines shadcn-ähnlichen Cards
+      function Card({ title, children }) {
+        return (
+          <div className="rounded-xl border bg-card text-card-foreground shadow p-4 mb-4">
+            <h2 className="text-lg font-semibold mb-2">{title}</h2>
+            {children}
           </div>
-        </div>
-      </div>
-
-      <nav className="space-y-1">
-        {[
-          ['habits','Gewohnheiten'],
-          ['timer','Timer'],
-          ['stats','Statistik'],
-          ['calendar','Kalender'],
-          ['settings','Einstellungen']
-        ].map(([id,label])=> (
-          <button key={id}
-            onClick={() => onNavigate(id)}
-            className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-md ${active===id ? 'bg-slate-100 dark:bg-slate-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}>
-            <span className="w-3 h-3 rounded-full bg-sky-500/80" />
-            <span>{label}</span>
-          </button>
-        ))}
-      </nav>
-
-      <div className="mt-8">
-        <div className="text-xs text-slate-500 mb-2">Theme</div>
-        <div className="flex gap-2">
-          <button className="w-full px-3 py-2 rounded-md bg-slate-100">Light</button>
-          <button className="w-full px-3 py-2 rounded-md bg-slate-900 text-white">Dark</button>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function Topbar({onAddHabit, search, setSearch}){
-  return (
-    <header className="flex items-center justify-between gap-4 p-4 border-b border-slate-100 dark:border-slate-700">
-      <div className="flex items-center gap-4">
-        <div className="text-lg font-semibold">Dashboard</div>
-        <div className="text-slate-500 text-sm">Übersicht & Management</div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Suche…" className="px-3 py-2 rounded-md border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60" />
-        <Button onClick={onAddHabit} variant='primary'>+ Gewohnheit</Button>
-      </div>
-    </header>
-  );
-}
-
-function HabitFormModal({open,onClose,onSave, edit}){
-  const [name,setName] = useState(edit?.name||'');
-  const [goal,setGoal] = useState(edit?.goal||1);
-  const [unit,setUnit] = useState(edit?.unit||'Einheiten');
-
-  useEffect(()=>{ if(open){ setName(edit?.name||''); setGoal(edit?.goal||1); setUnit(edit?.unit||'Einheiten'); } },[open,edit]);
-
-  if(!open) return null;
-  return (
-    <div className="fixed inset-0 grid place-items-center z-50">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-2xl">
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-lg font-semibold">{edit ? 'Gewohnheit bearbeiten' : 'Neue Gewohnheit'}</div>
-            <button onClick={onClose} className="text-slate-500">✕</button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name" className="col-span-2 px-3 py-2 rounded-md border" />
-            <input value={goal} onChange={e=>setGoal(Number(e.target.value))} type="number" min="1" className="px-3 py-2 rounded-md border" />
-            <input value={unit} onChange={e=>setUnit(e.target.value)} className="px-3 py-2 rounded-md border" />
-          </div>
-
-          <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={onClose} variant='ghost'>Abbrechen</Button>
-            <Button onClick={()=>{ onSave({ ...edit, name, goal, unit }); onClose(); }} variant='primary'>Speichern</Button>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function HabitRow({h, onInc, onDec, onAddSub, onToggleSub}){
-  const today = todayISO();
-  const count = h.logs?.[today] || 0;
-  return (
-    <div className="flex items-start gap-4 p-3 border rounded-lg">
-      <div className="w-2.5 h-2.5 rounded-full bg-sky-500 mt-1" />
-      <div className="flex-1">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-medium">{h.name}</div>
-            <div className="text-xs text-slate-500">{count} / {h.goal} {h.unit}</div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={()=>onDec(h.id)} className="px-2 py-1 rounded-md bg-slate-100">-</button>
-            <button onClick={()=>onInc(h.id)} className="px-2 py-1 rounded-md bg-slate-100">+</button>
-          </div>
-        </div>
-
-        {h.subtasks?.length > 0 && (
-          <div className="mt-3 grid gap-2">
-            {h.subtasks.map((st, i)=> (
-              <label key={i} className="inline-flex items-center gap-2 text-sm text-slate-700">
-                <input type="checkbox" checked={st.done?.[today]||false} onChange={()=>onToggleSub(h.id,i)} />
-                <span>{st.text}</span>
-              </label>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-3">
-          <button onClick={()=>{ const txt = prompt('Unterpunkt'); if(txt) onAddSub(h.id, txt); }} className="text-sm text-sky-600">+ Unterpunkt</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function TimerView(){
-  const [mode, setMode] = useState('work');
-  const [minutes, setMinutes] = useState(25);
-  const [seconds, setSeconds] = useState(0);
-  const [running, setRunning] = useState(false);
-
-  useEffect(()=>{
-    if(!running) return;
-    const id = setInterval(()=>{
-      if(seconds>0) setSeconds(s=>s-1);
-      else if(minutes>0){ setMinutes(m=>m-1); setSeconds(59); }
-      else {
-        clearInterval(id);
-        setRunning(false);
-        if(mode==='work'){
-          setMode('pause'); setMinutes(5); setSeconds(0);
-          alert('Arbeitszeit beendet — Zeit für eine Pause');
-        } else {
-          setMode('work'); setMinutes(25); setSeconds(0);
-          alert('Pause beendet — zurück zur Arbeit');
-        }
+        );
       }
-    }, 1000);
-    return ()=>clearInterval(id);
-  },[running, seconds, minutes, mode]);
 
-  return (
-    <Card>
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm text-slate-500">{mode === 'work' ? 'Arbeitszeit' : 'Pause'}</div>
-          <div className="text-3xl font-mono mt-1">{String(minutes).padStart(2,'0')}:{String(seconds).padStart(2,'0')}</div>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex gap-2">
-            <select value={minutes} onChange={e=>setMinutes(Number(e.target.value))} className="px-2 py-1 rounded-md border">
-              {[...Array(90)].map((_,i)=>(<option key={i} value={i+1}>{i+1} Min</option>))}
-            </select>
-            <Button onClick={()=>setRunning(r=>!r)} variant='primary'>{running ? 'Stop' : 'Start'}</Button>
-          </div>
-          <div className="text-xs text-slate-500">Nach Ablauf kannst du eine Pause (5–20min) wählen.</div>
-        </div>
-      </div>
-    </Card>
-  );
-}
+      // Habit Tracker mit Unterpunkten
+      function HabitTracker() {
+        const [habits, setHabits] = useState(() => {
+          const saved = localStorage.getItem("habits");
+          return saved ? JSON.parse(saved) : [];
+        });
+        const [input, setInput] = useState("");
 
-function StatsView({habits}){
-  // very small local chart using simple bars — for production swap to Chart.js
-  const perc = (h)=>{
-    const vals = Object.values(h.logs||{});
-    if(!vals.length) return 0;
-    const done = vals.filter(v=>v>=h.goal).length;
-    return Math.round(done/vals.length*100);
-  };
-  return (
-    <div className="grid grid-cols-2 gap-4">
-      {habits.map(h=> (
-        <Card key={h.id}>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium">{h.name}</div>
-              <div className="text-xs text-slate-500">Erfüllung</div>
+        useEffect(() => {
+          localStorage.setItem("habits", JSON.stringify(habits));
+        }, [habits]);
+
+        const addHabit = () => {
+          if (!input) return;
+          setHabits([...habits, { name: input, sub: [] }]);
+          setInput("");
+        };
+
+        const addSub = (i, subName) => {
+          if (!subName) return;
+          const newHabits = [...habits];
+          newHabits[i].sub.push({ name: subName, done: false });
+          setHabits(newHabits);
+        };
+
+        return (
+          <Card title="Gewohnheiten">
+            <div className="flex gap-2 mb-4">
+              <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                className="border rounded px-2 py-1 flex-grow"
+                placeholder="Neue Gewohnheit..."
+              />
+              <button onClick={addHabit} className="px-3 py-1 bg-primary text-white rounded">
+                Hinzufügen
+              </button>
             </div>
-            <div className="text-lg font-semibold">{perc(h)}%</div>
+            <ul className="space-y-3">
+              {habits.map((h, i) => (
+                <li key={i} className="border rounded p-2">
+                  <div className="font-semibold">{h.name}</div>
+                  <SubList habit={h} onAdd={name => addSub(i, name)} />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        );
+      }
+
+      function SubList({ habit, onAdd }) {
+        const [subName, setSubName] = useState("");
+        const [subs, setSubs] = useState(habit.sub);
+
+        const toggle = idx => {
+          const newSubs = [...subs];
+          newSubs[idx].done = !newSubs[idx].done;
+          setSubs(newSubs);
+        };
+
+        useEffect(() => {
+          habit.sub = subs;
+        }, [subs]);
+
+        return (
+          <div className="mt-2 ml-4">
+            <div className="flex gap-2 mb-2">
+              <input
+                value={subName}
+                onChange={e => setSubName(e.target.value)}
+                className="border rounded px-2 py-1 flex-grow"
+                placeholder="Unterpunkt..."
+              />
+              <button
+                onClick={() => {
+                  onAdd(subName);
+                  setSubs([...subs, { name: subName, done: false }]);
+                  setSubName("");
+                }}
+                className="px-2 bg-secondary text-white rounded"
+              >
+                +
+              </button>
+            </div>
+            <ul>
+              {subs.map((s, idx) => (
+                <li key={idx} className="flex items-center gap-2">
+                  <input type="checkbox" checked={s.done} onChange={() => toggle(idx)} />
+                  <span className={s.done ? "line-through" : ""}>{s.name}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="mt-3 h-2 bg-slate-100 rounded overflow-hidden">
-            <div style={{width: perc(h) + '%'}} className="h-full bg-sky-500"></div>
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
-}
+        );
+      }
 
-function CalendarView({events, setEvents}){
-  const [date, setDate] = useState(todayISO());
-  const todays = events[date] || [];
-  const addEvent = ()=>{
-    const time = prompt('Uhrzeit (HH:MM)');
-    const text = prompt('Was steht an?');
-    if(time && text){
-      setEvents(e=>({...e, [date]: [...(e[date]||[]), {time, text}] }));
-    }
-  };
-  return (
-    <Card>
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <div className="font-medium">Tagesübersicht</div>
-          <div className="text-xs text-slate-500">Terminplanung</div>
-        </div>
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="px-2 py-1 rounded-md border" />
-      </div>
-      <ul className="space-y-2">
-        {todays.map((ev,i)=> (<li key={i} className="flex items-center justify-between"><div><div className="text-sm font-medium">{ev.time}</div><div className="text-xs text-slate-500">{ev.text}</div></div></li>))}
-      </ul>
-      <div className="mt-3 flex justify-end">
-        <Button onClick={addEvent} variant='primary'>+ Termin</Button>
-      </div>
-    </Card>
-  );
-}
+      // Timer (Stoppuhr mit Pausen)
+      function Timer() {
+        const [time, setTime] = useState(0);
+        const [running, setRunning] = useState(false);
 
-export default function OpenHabitApp(){
-  const [state, setState] = useState(()=> JSON.parse(localStorage.getItem('oh_state_shadcn') || JSON.stringify({habits:[], events:{}})) );
-  const [active, setActive] = useState('habits');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editHabit, setEditHabit] = useState(null);
-  const [search, setSearch] = useState('');
+        useEffect(() => {
+          let interval;
+          if (running) {
+            interval = setInterval(() => setTime(t => t - 1), 1000);
+          }
+          return () => clearInterval(interval);
+        }, [running]);
 
-  useEffect(()=>{ localStorage.setItem('oh_state_shadcn', JSON.stringify(state)); },[state]);
+        useEffect(() => {
+          if (time === 0 && running) {
+            setRunning(false);
+            alert("Zeit abgelaufen!");
+          }
+        }, [time, running]);
 
-  const addHabit = (payload) => {
-    const newH = { id: uid(), name: payload?.name||'Neue Gewohnheit', goal: payload?.goal||1, unit: payload?.unit||'Einheiten', logs:{}, subtasks: payload?.subtasks||[] };
-    setState(s=>({...s, habits: [newH, ...s.habits]}));
-  };
-
-  const saveHabit = (h) => {
-    if(!h.id){ addHabit(h); return; }
-    setState(s=>({...s, habits: s.habits.map(x=> x.id===h.id ? {...x, ...h} : x )}));
-  };
-
-  const inc = (id)=> setState(s=>({...s, habits: s.habits.map(h=> h.id===id ? ({ ...h, logs: { ...(h.logs||{}), [todayISO()]: Math.max(0,(h.logs?.[todayISO()]||0)+1) } }) : h ) }));
-  const dec = (id)=> setState(s=>({...s, habits: s.habits.map(h=> h.id===id ? ({ ...h, logs: { ...(h.logs||{}), [todayISO()]: Math.max(0,(h.logs?.[todayISO()]||0)-1) } }) : h ) }));
-
-  const addSubtask = (id, text) => setState(s=>({...s, habits: s.habits.map(h=> h.id===id ? ({ ...h, subtasks: [...(h.subtasks||[]), { text, done: {} }] }) : h ) }));
-  const toggleSubtask = (id, idx) => setState(s=>({...s, habits: s.habits.map(h=> {
-    if(h.id!==id) return h;
-    const copy = (h.subtasks||[]).slice();
-    const st = { ...copy[idx] };
-    st.done = { ...(st.done||{}), [todayISO()]: !st.done?.[todayISO()] };
-    copy[idx] = st;
-    return { ...h, subtasks: copy };
-  }) }));
-
-  const filtered = useMemo(()=> state.habits.filter(h=> h.name.toLowerCase().includes(search.toLowerCase())), [state.habits, search]);
-
-  return (
-    <div className="flex h-full min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-      <Sidebar onNavigate={setActive} active={active} />
-      <div className="flex-1 flex flex-col">
-        <Topbar onAddHabit={()=>setModalOpen(true)} search={search} setSearch={setSearch} />
-        <main className="p-6 space-y-6">
-          {active === 'habits' && (
-            <div className="grid grid-cols-3 gap-6">
-              <div className="col-span-2 space-y-4">
-                {filtered.map(h=> <HabitRow key={h.id} h={h} onInc={inc} onDec={dec} onAddSub={addSubtask} onToggleSub={(hid, idx)=>toggleSubtask(h.id, idx)} />)}
-                {filtered.length===0 && <Card className="text-center">Keine Gewohnheiten gefunden.</Card>}
+        return (
+          <Card title="Stoppuhr">
+            <div className="flex flex-col items-center gap-3">
+              <div className="text-3xl">{time}s</div>
+              <div className="flex gap-2">
+                <button onClick={() => setRunning(!running)} className="px-3 py-1 bg-primary text-white rounded">
+                  {running ? "Pause" : "Start"}
+                </button>
+                <button onClick={() => { setTime(1500); setRunning(false); }} className="px-3 py-1 bg-secondary text-white rounded">
+                  Reset (25min)
+                </button>
               </div>
-              <aside className="space-y-4">
-                <Card>
-                  <div className="text-sm font-medium">Schnellstatistik</div>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-slate-50 rounded">Habits<br/><div className="text-lg font-semibold">{state.habits.length}</div></div>
-                    <div className="p-3 bg-slate-50 rounded">Heute<br/><div className="text-lg font-semibold">{state.habits.filter(h=> (h.logs||{})[todayISO()]).length}</div></div>
-                  </div>
-                </Card>
-
-                <Card>
-                  <div className="text-sm font-medium">Einheiten</div>
-                  <div className="mt-2 text-xs text-slate-500">Pro Gewohnheit kannst du eine Einheit (z.B. Seiten, Minuten) setzen.</div>
-                </Card>
-              </aside>
             </div>
-          )}
+          </Card>
+        );
+      }
 
-          {active === 'timer' && (
-            <div className="max-w-2xl">
-              <TimerView />
-            </div>
-          )}
+      function App() {
+        return (
+          <div className="container mx-auto max-w-2xl py-6">
+            <h1 className="text-2xl font-bold mb-6">🌱 OpenHabit</h1>
+            <HabitTracker />
+            <Timer />
+          </div>
+        );
+      }
 
-          {active === 'stats' && (
-            <StatsView habits={state.habits} />
-          )}
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
-          {active === 'calendar' && (
-            <CalendarView events={state.events||{}} setEvents={(e)=>setState(s=>({...s, events: e}))} />
-          )}
-
-          {active === 'settings' && (
-            <Card>
-              <div className="text-lg font-medium">Einstellungen</div>
-              <div className="mt-3 text-sm text-slate-500">Alle Daten bleiben lokal im Browser (localStorage).</div>
-              <div className="mt-3">
-                <Button onClick={()=>{ navigator.clipboard.writeText(JSON.stringify(state)); alert('Backup in Zwischenablage'); }}>Backup kopieren</Button>
-                <Button onClick={()=>{ const s = prompt('Backup JSON einfügen'); if(s) setState(JSON.parse(s)); }} className="ml-2">Import</Button>
-              </div>
-            </Card>
-          )}
-        </main>
-      </div>
-
-      <HabitFormModal open={modalOpen} onClose={()=>{ setModalOpen(false); setEditHabit(null); }} onSave={(h)=> saveHabit(h)} edit={editHabit} />
-
-    </div>
-  );
-}
+    </script>
+  </body>
+</html>
