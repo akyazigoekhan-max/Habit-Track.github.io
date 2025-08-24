@@ -1,340 +1,151 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Futuristischer Aufgabenmanager</title>
-<style>
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: #0f0f1a;
-        color: #e0e0f0;
-        margin: 0;
-        padding: 0;
-    }
-    header {
-        background: linear-gradient(90deg, #00ffff, #ff00ff);
-        padding: 1rem;
-        text-align: center;
-        font-size: 1.8rem;
-        font-weight: bold;
-        letter-spacing: 2px;
-        color: #fff;
-    }
-    main {
-        display: flex;
-        flex-wrap: wrap;
-        padding: 1rem;
-        gap: 1rem;
-    }
-    section {
-        background: #1a1a2e;
-        border-radius: 12px;
-        padding: 1rem;
-        flex: 1 1 300px;
-        min-width: 300px;
-        max-width: 600px;
-    }
-    h2 {
-        border-bottom: 1px solid #444;
-        padding-bottom: 0.5rem;
-    }
-    input, textarea, select, button {
-        width: 100%;
-        margin: 0.5rem 0;
-        padding: 0.5rem;
-        border-radius: 8px;
-        border: none;
-        background: #222;
-        color: #fff;
-    }
-    button {
-        cursor: pointer;
-        background: linear-gradient(90deg, #00ffff, #ff00ff);
-        color: #000;
-        font-weight: bold;
-    }
-    ul {
-        list-style: none;
-        padding: 0;
-    }
-    li {
-        background: #111;
-        margin: 0.5rem 0;
-        padding: 0.5rem;
-        border-radius: 8px;
-    }
-    .task-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .tag {
-        background: #00ffff;
-        color: #000;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        margin-left: 0.3rem;
-    }
-    .calendar {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 0.5rem;
-    }
-    .calendar div {
-        background: #111;
-        padding: 0.5rem;
-        border-radius: 8px;
-        min-height: 60px;
-    }
-    .pomodoro {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    .pomodoro-timer {
-        font-size: 2rem;
-        margin: 1rem 0;
-    }
-    .subtasks {
-        margin-left: 1rem;
-    }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OpenHabit – Web Habit Tracker</title>
+  <meta name="description" content="Ein freier, quelloffener Habit-Tracker für das Web – ohne Limits."/>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0ea5e9"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'><rect width='256' height='256' rx='56' fill='%230ea5e9'/><path d='M188 84l-74 88-46-40' fill='none' stroke='white' stroke-width='18' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React 18 + ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel für JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    html, body, #root { height: 100%; }
+    .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,0.7); }
+    .dark .glass { background: rgba(0,0,0,0.35); }
+    .calendar-cell { width: 18px; height: 18px; }
+  </style>
 </head>
-<body>
-<header>Futuristischer Aufgabenmanager</header>
-<main>
-    <!-- Aufgabenverwaltung -->
-    <section id="tasks-section">
-        <h2>Aufgaben</h2>
-        <input type="text" id="task-title" placeholder="Titel">
-        <textarea id="task-desc" placeholder="Beschreibung"></textarea>
-        <input type="date" id="task-date">
-        <input type="time" id="task-time">
-        <select id="task-priority">
-            <option value="Hoch">Hoch</option>
-            <option value="Mittel">Mittel</option>
-            <option value="Niedrig">Niedrig</option>
-        </select>
-        <input type="text" id="task-tags" placeholder="Tags, kommasepariert">
-        <select id="task-recurring">
-            <option value="none">Keine Wiederholung</option>
-            <option value="daily">Täglich</option>
-            <option value="weekly">Wöchentlich</option>
-            <option value="monthly">Monatlich</option>
-        </select>
-        <input type="text" id="task-subtasks" placeholder="Unteraufgaben, kommasepariert">
-        <button onclick="addTask()">Aufgabe hinzufügen</button>
-        <ul id="task-list"></ul>
-    </section>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+  <noscript>Diese App benötigt JavaScript.</noscript>
+  <div id="root" class="h-full"></div>
 
-    <!-- Kalenderansicht -->
-    <section id="calendar-section">
-        <h2>Kalender</h2>
-        <div class="calendar" id="calendar-grid"></div>
-    </section>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
 
-    <!-- Pomodoro -->
-    <section id="pomodoro-section">
-        <h2>Pomodoro-Timer</h2>
-        <div class="pomodoro">
-            <div class="pomodoro-timer" id="pomodoro-timer">25:00</div>
-            <button onclick="startPomodoro()">Start</button>
-            <button onclick="resetPomodoro()">Reset</button>
+    const uid = () => crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '_' + Math.random().toString(16).slice(2));
+    const todayISO = () => new Date().toISOString().slice(0,10);
+    const fmt = (d) => d.toISOString().slice(0,10);
+    const dateAdd = (d, days) => { const x = new Date(d); x.setDate(x.getDate()+days); return x; };
+    const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
+
+    // ----- LocalStorage -----
+    const loadState = () => {
+      try { return JSON.parse(localStorage.getItem('openhabit_state_v1')) || { habits: [], settings: { theme: 'system' } }; }
+      catch { return { habits: [], settings: { theme: 'system' } }; }
+    };
+    const saveState = (s) => localStorage.setItem('openhabit_state_v1', JSON.stringify(s));
+
+    // ----- UI Komponenten -----
+    function ThemeController({settings,setSettings}){
+      useEffect(()=>{
+        const prefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const t = settings.theme==='system' ? (prefers?'dark':'light') : settings.theme;
+        document.documentElement.classList.toggle('dark', t==='dark');
+      },[settings.theme]);
+      return (
+        <select value={settings.theme} onChange={e=>setSettings(s=>({...s,theme:e.target.value}))}
+          className="px-2 py-1 rounded-xl bg-slate-200/60 dark:bg-slate-800/60">
+          <option value="system">System</option>
+          <option value="light">Hell</option>
+          <option value="dark">Dunkel</option>
+        </select>
+      )
+    }
+
+    function HabitForm({onCreate}){
+      const [name,setName]=useState('');
+      const [color,setColor]=useState('#0ea5e9');
+      const [goal,setGoal]=useState(1);
+      const [period,setPeriod]=useState('day');
+      const submit=(e)=>{e.preventDefault();
+        if(!name.trim()) return;
+        onCreate({id:uid(),name:name.trim(),color,goal:parseInt(goal),period,logs:{},createdAt:Date.now(),archived:false});
+        setName('');
+      };
+      return (
+        <form onSubmit={submit} className="flex gap-2 flex-wrap">
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Neue Gewohnheit…" className="px-3 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800"/>
+          <select value={period} onChange={e=>setPeriod(e.target.value)} className="px-3 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800">
+            <option value="day">täglich</option>
+            <option value="week">wöchentlich</option>
+          </select>
+          <input type="number" min="1" value={goal} onChange={e=>setGoal(e.target.value)} className="px-3 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 w-20"/>
+          <input type="color" value={color} onChange={e=>setColor(e.target.value)} className="w-12 h-12 rounded-xl"/>
+          <button className="px-4 py-2 rounded-2xl bg-sky-600 text-white">Hinzufügen</button>
+        </form>
+      )
+    }
+
+    function ProgressBar({value,max,color}){
+      const pct=Math.min(100,Math.round((value/max)*100));
+      return <div className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-xl"><div style={{width:pct+'%',background:color}} className="h-3 rounded-xl"></div></div>
+    }
+
+    function Calendar({habit}){
+      const days=30; const cells=[];
+      for(let i=days-1;i>=0;i--){
+        const d=fmt(dateAdd(new Date(),-i));
+        const done=(habit.logs?.[d]||0)>=habit.goal;
+        cells.push(<div key={d} className={"calendar-cell rounded "+(done?"bg-emerald-500":"bg-slate-300 dark:bg-slate-700")}></div>);
+      }
+      return <div className="flex flex-wrap gap-1">{cells}</div>
+    }
+
+    function HabitCard({habit,onLog,onArchive}){
+      const today=todayISO(); const count=habit.logs?.[today]||0;
+      return (
+        <div className="rounded-3xl p-4 bg-white/70 dark:bg-slate-800/60 glass">
+          <div className="flex justify-between">
+            <div className="font-semibold">{habit.name}</div>
+            <div className="flex gap-2">
+              <button onClick={()=>onLog(habit.id,-1)} className="px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded">-</button>
+              <span className="min-w-[2rem] text-center">{count}</span>
+              <button onClick={()=>onLog(habit.id,1)} className="px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded">+</button>
+            </div>
+          </div>
+          <div className="mt-2"><ProgressBar value={count} max={habit.goal} color={habit.color}/></div>
+          <div className="mt-2"><Calendar habit={habit}/></div>
+          <button onClick={()=>onArchive(habit.id)} className="mt-2 px-3 py-1 bg-rose-600 text-white rounded">Archivieren</button>
         </div>
-    </section>
-
-    <!-- Gewohnheiten / Habit Tracker -->
-    <section id="habit-section">
-        <h2>Gewohnheiten</h2>
-        <input type="text" id="habit-name" placeholder="Gewohnheit hinzufügen">
-        <button onclick="addHabit()">Hinzufügen</button>
-        <ul id="habit-list"></ul>
-    </section>
-</main>
-
-<script>
-    // --- LocalStorage Laden ---
-    let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-    let habits = JSON.parse(localStorage.getItem('habits') || '[]');
-
-    const taskList = document.getElementById('task-list');
-    const habitList = document.getElementById('habit-list');
-
-    function saveTasks() {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-        renderTasks();
-        renderCalendar();
+      )
     }
 
-    function saveHabits() {
-        localStorage.setItem('habits', JSON.stringify(habits));
-        renderHabits();
+    function App(){
+      const [state,setState]=useState(loadState());
+      useEffect(()=>saveState(state),[state]);
+      const addHabit=h=>setState(s=>({...s,habits:[h,...s.habits]}));
+      const log=(id,delta)=>setState(s=>({...s,habits:s.habits.map(h=>{
+        if(h.id!==id)return h; const d=todayISO(); const logs={...(h.logs||{})};
+        logs[d]=clamp((logs[d]||0)+delta,0,999); return {...h,logs};
+      })}));
+      const archive=id=>setState(s=>({...s,habits:s.habits.map(h=>h.id===id?{...h,archived:!h.archived}:h)}));
+      return (
+        <div className="h-full flex flex-col">
+          <header className="p-4 flex justify-between items-center glass">
+            <div className="font-bold text-xl">OpenHabit</div>
+            <ThemeController settings={state.settings} setSettings={fn=>setState(s=>({...s,settings:fn(s.settings)}))}/>
+          </header>
+          <main className="p-4 space-y-4 flex-1 overflow-y-auto">
+            <HabitForm onCreate={addHabit}/>
+            <div className="grid md:grid-cols-2 gap-4">
+              {state.habits.filter(h=>!h.archived).map(h=><HabitCard key={h.id} habit={h} onLog={log} onArchive={archive}/>)}
+            </div>
+          </main>
+          <footer className="p-4 text-sm text-center opacity-70">© {new Date().getFullYear()} OpenHabit – MIT License</footer>
+        </div>
+      )
     }
 
-    // --- Aufgaben ---
-    function addTask() {
-        const title = document.getElementById('task-title').value;
-        const desc = document.getElementById('task-desc').value;
-        const date = document.getElementById('task-date').value;
-        const time = document.getElementById('task-time').value;
-        const priority = document.getElementById('task-priority').value;
-        const tags = document.getElementById('task-tags').value.split(',').map(t=>t.trim()).filter(t=>t);
-        const recurring = document.getElementById('task-recurring').value;
-        const subtasks = document.getElementById('task-subtasks').value.split(',').map(t=>t.trim()).filter(t=>t);
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 
-        if(!title) return alert('Titel eingeben');
-
-        tasks.push({title, desc, date, time, priority, tags, recurring, subtasks});
-        saveTasks();
-
-        // Felder zurücksetzen
-        ['task-title','task-desc','task-date','task-time','task-tags','task-subtasks','task-recurring'].forEach(id=>{
-            document.getElementById(id).value='';
-        });
-    }
-
-    function deleteTask(index){
-        if(confirm('Aufgabe löschen?')){
-            tasks.splice(index,1);
-            saveTasks();
-        }
-    }
-
-    function renderTasks(){
-        taskList.innerHTML='';
-        tasks.forEach((t,i)=>{
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <div class="task-header">
-                    <strong>${t.title}</strong>
-                    <span>${t.priority}</span>
-                </div>
-                <div>${t.desc}</div>
-                <div>${t.date} ${t.time}</div>
-                <div>${t.tags.map(tag=>`<span class="tag">${tag}</span>`).join('')}</div>
-                ${t.subtasks.length>0?`<ul class="subtasks">${t.subtasks.map(st=>`<li>${st}</li>`).join('')}</ul>`:''}
-                <div>Wiederholung: ${t.recurring==='none'?'Keine':t.recurring}</div>
-                <button onclick="deleteTask(${i})">Löschen</button>
-            `;
-            taskList.appendChild(li);
-        });
-    }
-
-    // --- Kalender (Monatsansicht) ---
-    function renderCalendar(){
-        const grid = document.getElementById('calendar-grid');
-        grid.innerHTML='';
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = today.getMonth();
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month+1, 0).getDate();
-
-        for(let i=0;i<firstDay;i++){
-            const empty = document.createElement('div');
-            grid.appendChild(empty);
-        }
-
-        for(let d=1; d<=daysInMonth; d++){
-            const dayDiv = document.createElement('div');
-            dayDiv.innerHTML=`<strong>${d}</strong>`;
-            const dayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-
-            tasks.forEach(t=>{
-                let add = false;
-                if(t.date===dayStr) add=true;
-                else if(t.recurring==='daily') add=true;
-                else if(t.recurring==='weekly'){
-                    const taskDay = new Date(t.date).getDay();
-                    const currDay = new Date(year, month, d).getDay();
-                    if(taskDay===currDay) add=true;
-                }
-                else if(t.recurring==='monthly'){
-                    const taskDate = new Date(t.date).getDate();
-                    if(taskDate===d) add=true;
-                }
-                if(add){
-                    const tDiv = document.createElement('div');
-                    tDiv.textContent = `${t.title} (${t.time})`;
-                    tDiv.style.background='#00ffff';
-                    tDiv.style.color='#000';
-                    tDiv.style.marginTop='2px';
-                    tDiv.style.borderRadius='4px';
-                    tDiv.style.padding='2px';
-                    dayDiv.appendChild(tDiv);
-                }
-            });
-
-            grid.appendChild(dayDiv);
-        }
-    }
-
-    // --- Pomodoro Timer ---
-    let pomodoroTime=25*60;
-    let pomodoroInterval=null;
-    const pomodoroDisplay=document.getElementById('pomodoro-timer');
-
-    function startPomodoro(){
-        if(pomodoroInterval) return;
-        pomodoroInterval=setInterval(()=>{
-            pomodoroTime--;
-            const m=Math.floor(pomodoroTime/60).toString().padStart(2,'0');
-            const s=(pomodoroTime%60).toString().padStart(2,'0');
-            pomodoroDisplay.textContent=`${m}:${s}`;
-            if(pomodoroTime<=0){
-                clearInterval(pomodoroInterval);
-                pomodoroInterval=null;
-                alert('Pomodoro beendet!');
-                pomodoroTime=25*60;
-                pomodoroDisplay.textContent='25:00';
-            }
-        },1000);
-    }
-
-    function resetPomodoro(){
-        clearInterval(pomodoroInterval);
-        pomodoroInterval=null;
-        pomodoroTime=25*60;
-        pomodoroDisplay.textContent='25:00';
-    }
-
-    // --- Habit Tracker ---
-    function addHabit(){
-        const name = document.getElementById('habit-name').value;
-        if(!name) return;
-        habits.push({name, completed: false});
-        saveHabits();
-        document.getElementById('habit-name').value='';
-    }
-
-    function toggleHabit(index){
-        habits[index].completed=!habits[index].completed;
-        saveHabits();
-    }
-
-    function deleteHabit(index){
-        habits.splice(index,1);
-        saveHabits();
-    }
-
-    function renderHabits(){
-        habitList.innerHTML='';
-        habits.forEach((h,i)=>{
-            const li=document.createElement('li');
-            li.innerHTML=`
-                <input type="checkbox" ${h.completed?'checked':''} onclick="toggleHabit(${i})">
-                ${h.name}
-                <button onclick="deleteHabit(${i})">Löschen</button>
-            `;
-            habitList.appendChild(li);
-        });
-    }
-
-    renderTasks();
-    renderHabits();
-    renderCalendar();
-</script>
+    if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js'));}
+  </script>
 </body>
 </html>
